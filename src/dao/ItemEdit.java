@@ -29,6 +29,9 @@ public class ItemEdit {
             con.setAutoCommit(false);
             String sql = "INSERT INTO iteminfo (name, price) VALUES (?,?)";
             st = con.prepareStatement(sql);
+            if (price < 0) {
+                throw new ObjectNotFoundException();
+            }
             st.setString(1, name);
             st.setDouble(2, price);
             int i = st.executeUpdate();
@@ -38,6 +41,8 @@ public class ItemEdit {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } catch (ObjectNotFoundException e) {
+            System.out.println("参数非法！");
         } finally {
             JDBCUtils.release(con, st, null);
         }

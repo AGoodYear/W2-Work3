@@ -54,7 +54,7 @@ public class OrderEdit {
                     continue;
                 }
                 int itemId = ItemEdit.retrieveItem(itemName).getId();
-                if (id == -1) {
+                if (itemId == -1) {
                     throw new ObjectNotFoundException();
                 }
                 sql = "INSERT INTO orderitem (orderid, itemid, amount) VALUES (?,?,?)";
