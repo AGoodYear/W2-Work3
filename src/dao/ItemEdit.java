@@ -1,5 +1,6 @@
 package dao;
 
+import pojo.Item;
 import utils.JDBCUtils;
 
 import java.sql.Connection;
@@ -7,7 +8,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+/**
+ * ItemEdit类用于存放对订单进行增删改查的函数
+ *
+ * @author AGoodYear
+ * @date 2023/12/19
+ */
 public class ItemEdit {
+    /**
+     * 创建商品
+     *
+     * @param name 商品名称
+     * @param price 商品价格
+     */
     public static void createItem(String name, double price){
         Connection con = null;
         PreparedStatement st = null;
@@ -30,6 +43,11 @@ public class ItemEdit {
         }
     }
 
+    /**
+     * 删除商品
+     *
+     * @param name 要删除的商品名称
+     */
     public static void deleteItem(String name) {
         Connection con = null;
         PreparedStatement st = null;
@@ -43,6 +61,8 @@ public class ItemEdit {
             if (i>0) {
                 con.commit();
                 System.out.println("删除商品成功！");
+            } else {
+                System.out.println("没有找到该商品");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -51,10 +71,19 @@ public class ItemEdit {
         }
     }
 
+    /**
+     * 更新商品价格
+     *
+     * @param name 要更新的商品名字
+     * @param price 更新的价格
+     */
     public static void updateItem(String name, double price){
         Connection con = null;
         PreparedStatement st = null;
         try {
+            if (price < 0) {
+                throw new ObjectNotFoundException();
+            }
             con = JDBCUtils.getConnection();
             con.setAutoCommit(false);
             String sql = "UPDATE iteminfo SET price=? WHERE name=?";
@@ -65,89 +94,97 @@ public class ItemEdit {
             if (i>0) {
                 con.commit();
                 System.out.println("修改价格成功！");
+            } else {
+                throw new ObjectNotFoundException();
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } catch (ObjectNotFoundException e) {
+            System.out.println("参数不合法！");
         } finally {
             JDBCUtils.release(con, st, null);
         }
     }
 
-    public static double retrieveItem(String name){
+    /**
+     * 根据商品名称查询商品
+     *
+     * @param name 要查询的商品名字
+     * @return 商品对象
+     */
+    public static Item retrieveItem(String name){
         Connection con = null;
         PreparedStatement st = null;
         ResultSet rs = null;
         double itemPrice = 0;
-        try {
-            con = JDBCUtils.getConnection();
-            con.setAutoCommit(false);
-            String sql = "SELECT name, price FROM iteminfo WHERE name=?";
-            st = con.prepareStatement(sql);
-            st.setString(1, name);
-            rs = st.executeQuery();
-            if (rs!=null) {
-                con.commit();
-                rs.next();
-                itemPrice = rs.getDouble("price");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            JDBCUtils.release(con, st, rs);
-        }
-        return itemPrice;
-    }
-
-    public static String retrieveItemName(int id){
-        Connection con = null;
-        PreparedStatement st = null;
-        ResultSet rs = null;
-        String itemName = "";
-        try {
-            con = JDBCUtils.getConnection();
-            con.setAutoCommit(false);
-            String sql = "SELECT name FROM iteminfo WHERE id=?";
-            st = con.prepareStatement(sql);
-            st.setInt(1, id);
-            rs = st.executeQuery();
-            if (rs!=null) {
-                con.commit();
-                rs.next();
-                itemName = rs.getString("name");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            JDBCUtils.release(con, st, rs);
-        }
-        return itemName;
-    }
-
-    public static int retrieveItemId(String name){
-        Connection con = null;
-        PreparedStatement st = null;
-        ResultSet rs = null;
         int itemId = 0;
         try {
             con = JDBCUtils.getConnection();
             con.setAutoCommit(false);
-            String sql = "SELECT id FROM iteminfo WHERE name=?";
+            String sql = "SELECT id, name, price FROM iteminfo WHERE name=?";
             st = con.prepareStatement(sql);
             st.setString(1, name);
             rs = st.executeQuery();
-            if (rs!=null) {
-                con.commit();
-                rs.next();
+            if (rs.next()) {
+                itemPrice = rs.getDouble("price");
                 itemId = rs.getInt("id");
+            } else {
+                throw new ObjectNotFoundException();
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } catch (ObjectNotFoundException e) {
+            e.showError();
         } finally {
             JDBCUtils.release(con, st, rs);
         }
-        return itemId;
+        Item item = new Item(name, itemPrice);
+        item.setId(itemId);
+        return item;
     }
 
+    /**
+     * 根据商品编号查询商品信息
+     *
+     * @param id 要查询的商品编号
+     * @return 商品对象
+     */
+    public static Item retrieveItem(int id){
+        Connection con = null;
+        PreparedStatement st = null;
+        ResultSet rs = null;
+        String itemName = "";
+        int itemId = 0;
+        double itemPrice = 0;
+        try {
+            con = JDBCUtils.getConnection();
+            con.setAutoCommit(false);
+            String sql = "SELECT id, name, price FROM iteminfo WHERE id=?";
+            st = con.prepareStatement(sql);
+            st.setInt(1, id);
+            rs = st.executeQuery();
+            if (rs.next()) {
+                itemName = rs.getString("name");
+                itemId = rs.getInt("id");
+                itemPrice = rs.getDouble("price");
+            }else {
+                throw new ObjectNotFoundException();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } catch (ObjectNotFoundException e) {
+            e.showError();
+        } finally {
+            JDBCUtils.release(con, st, rs);
+        }
+        Item item = new Item(itemName, itemPrice);
+        item.setId(itemId);
+        return item;
+    }
+
+    /**
+     * 列出当前所有商品
+     */
     public static void listItem(){
         Connection con = null;
         PreparedStatement st = null;
@@ -168,6 +205,8 @@ public class ItemEdit {
                     itemPrice = rs.getDouble("price");
                     System.out.println(itemName + ":" + itemPrice+"元");
                 }
+            } else {
+                System.out.println("系统中还没有商品");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
