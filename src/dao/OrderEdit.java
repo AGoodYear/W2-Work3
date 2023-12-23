@@ -211,7 +211,7 @@ public class OrderEdit {
             st = con.prepareStatement(sql);
             st.setInt(1, id);
             rs = st.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 System.out.println("编号为" + id + "的订单信息：");
                 int itemId = rs.getInt("itemid");
                 String itemName = ItemEdit.retrieveItem(itemId).getName();
