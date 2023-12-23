@@ -54,6 +54,9 @@ public class OrderEdit {
                     continue;
                 }
                 int itemId = ItemEdit.retrieveItem(itemName).getId();
+                if (id == -1) {
+                    throw new ObjectNotFoundException();
+                }
                 sql = "INSERT INTO orderitem (orderid, itemid, amount) VALUES (?,?,?)";
                 st = con.prepareStatement(sql);
                 st.setInt(1, id);
@@ -73,6 +76,8 @@ public class OrderEdit {
             System.out.println("订单创建成功！");
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        } catch (ObjectNotFoundException e) {
+
         } finally {
             JDBCUtils.release(con, st, rs);
         }

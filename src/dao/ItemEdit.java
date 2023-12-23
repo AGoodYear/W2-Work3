@@ -118,6 +118,7 @@ public class ItemEdit {
         ResultSet rs = null;
         double itemPrice = 0;
         int itemId = 0;
+        Item item;
         try {
             con = JDBCUtils.getConnection();
             con.setAutoCommit(false);
@@ -128,6 +129,8 @@ public class ItemEdit {
             if (rs.next()) {
                 itemPrice = rs.getDouble("price");
                 itemId = rs.getInt("id");
+                item = new Item(name, itemPrice);
+                item.setId(itemId);
             } else {
                 throw new ObjectNotFoundException();
             }
@@ -135,11 +138,12 @@ public class ItemEdit {
             throw new RuntimeException(e);
         } catch (ObjectNotFoundException e) {
             e.showError();
+            item = new Item("", 0);
+            item.setId(-1);
         } finally {
             JDBCUtils.release(con, st, rs);
         }
-        Item item = new Item(name, itemPrice);
-        item.setId(itemId);
+
         return item;
     }
 
